@@ -1,0 +1,7 @@
+{
+  "name": "TrailQuest India - 3D Gamified Tourism & Heritage Map",
+  "description": "An interactive 3D map of India with all 28 states & 8 UTs, gamified cultural quests, generational artisan trails, and real-time crowd-balancing rewards.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

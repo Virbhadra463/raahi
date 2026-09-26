@@ -1,0 +1,6 @@
+pandas
+openpyxl
+geopy
+numpy
+folium
+requests
