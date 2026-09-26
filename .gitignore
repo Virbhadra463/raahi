@@ -53,9 +53,7 @@ coverage.xml
 htmlcov/
 
 # Production Build Artifacts
-frontend/dist/
 frontend/build/
-dist/
 build/
 
 # Logs
