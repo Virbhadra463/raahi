@@ -7,7 +7,8 @@ import {
   renameTrip,
   deleteTrip,
 } from "../../services/api";
-import { ChatResponse, ChatMessage, TripListItem } from "../../types/travel";
+import { ChatResponse, ChatMessage, TripListItem, DigitalTwinSimulateResponse } from "../../types/travel";
+
 import { TripBar } from "./TripBar";
 import { CreateTripModal } from "./CreateTripModal";
 import { ConversationView } from "./ConversationView";
@@ -18,14 +19,16 @@ import { HotelCard } from "./HotelCard";
 import { FlightCard } from "./FlightCard";
 import { ItineraryTimeline } from "./ItineraryTimeline";
 import { TripMap } from "./TripMap";
+import { PlannerLoadingState } from "./PlannerLoadingState";
+import { DigitalTwinPanel } from "./DigitalTwinPanel";
 import { exportItineraryToWord } from "../../utils/exportDocx";
 import { ErrorBoundary } from "../common/ErrorBoundary";
+
 import {
   Sparkles,
   AlertCircle,
   Database,
   Compass,
-  FileDown,
   Layers,
   MapPin,
   CheckCircle2
@@ -59,6 +62,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [hasTriggeredInitial, setHasTriggeredInitial] = useState(false);
   const [userName, setUserName] = useState<string>("Raahi Traveler");
+  const [activePrompt, setActivePrompt] = useState<string>("");
+  const [simulationResult, setSimulationResult] = useState<DigitalTwinSimulateResponse | null>(null);
 
   useEffect(() => {
     try {
@@ -255,6 +260,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   ) => {
     setIsLoading(true);
     setError(null);
+    setActivePrompt(message);
 
     let currentSessionId = overrideSessionId || activeTripId;
     let currentTripName = overrideTripName || activeTripData?.name || "Active Trip";
@@ -390,47 +396,20 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
             Real OSRM road calculations, verified OpenStreetMap landmark geocoding, flight booking options, haveli choices, and deterministic budget optimization.
           </p>
         </div>
-
-        <div className="flex items-center gap-3 shrink-0 flex-wrap relative z-10">
-          {currentResponse && (
-            <button
-              onClick={() => {
-                setActiveTripId(null);
-                setActiveTripData(null);
-              }}
-              className="flex items-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl bg-marigold hover:bg-amber-300 text-signboard-navy text-xs font-heading font-black uppercase tracking-wider shadow-bollywood border-2 border-signboard-navy transition-all cursor-pointer active:scale-95"
-            >
-              <Sparkles className="w-4 h-4 text-carpet-maroon" />
-              <span>+ Plan Another Trip</span>
-            </button>
-          )}
-
-          {currentResponse && (
-            <button
-              onClick={() => exportItineraryToWord(currentResponse)}
-              className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-carpet-maroon hover:bg-carpet-light text-white text-xs font-heading font-black uppercase tracking-wider shadow-bollywood border-2 border-carpet-maroon transition-all cursor-pointer active:scale-95 shrink-0"
-            >
-              <FileDown className="w-4 h-4 text-marigold" />
-              <span>Export (.docx)</span>
-            </button>
-          )}
-        </div>
       </div>
 
       {/* 2. Trip Management Bar */}
-      <div className="bg-[#FAF5EE] rounded-3xl p-3 sm:p-4 border-2 border-signboard-navy/15 shadow-sm">
-        <TripBar
-          trips={trips}
-          activeTripId={activeTripId}
-          onSelectTrip={handleSelectTrip}
-          onCreateTripClick={() => {
-            setActiveTripId(null);
-            setActiveTripData(null);
-          }}
-          onRenameTrip={handleRenameTrip}
-          onDeleteTrip={handleDeleteTrip}
-        />
-      </div>
+      <TripBar
+        trips={trips}
+        activeTripId={activeTripId}
+        onSelectTrip={handleSelectTrip}
+        onCreateTripClick={() => {
+          setActiveTripId(null);
+          setActiveTripData(null);
+        }}
+        onRenameTrip={handleRenameTrip}
+        onDeleteTrip={handleDeleteTrip}
+      />
 
       {/* 3. Hero Prompt Box if no trip or empty history */}
       {(!activeTripData || currentChatHistory.length === 0) && (
@@ -489,19 +468,11 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         </div>
       )}
 
-      {/* 5. Loading Skeleton */}
+      {/* 5. Multi-Agent Step-by-Step Loading Pipeline */}
       {isLoading && (
-        <div className="bg-[#FFFDF9] border-2 sm:border-3 border-signboard-navy rounded-3xl p-10 sm:p-12 text-center space-y-4 shadow-bollywood animate-pulse text-signboard-navy">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-carpet-maroon text-marigold flex items-center justify-center shadow-bollywood">
-            <Compass className="w-8 h-8 animate-spin" style={{ animationDuration: "3s" }} />
-          </div>
-          <h3 className="font-display font-black text-2xl text-signboard-navy">
-            Drafting Your Royal Itinerary...
-          </h3>
-          <p className="text-xs sm:text-sm text-signboard-navy/70 max-w-md mx-auto font-body font-medium leading-relaxed">
-            Querying live OpenStreetMap landmarks, calculating real OSRM road transit, matching budget accommodations, and verifying safety tolerances.
-          </p>
-        </div>
+        <PlannerLoadingState
+          prompt={activePrompt}
+        />
       )}
 
       {/* 6. Active Trip Layout */}
@@ -509,8 +480,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         <ErrorBoundary fallbackTitle="Unable to display trip details">
           <div className="space-y-6">
             {/* Top Row: Trip Overview & Cost Breakdown */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+              <div className="lg:col-span-2 flex">
                 {currentResponse.trip && (
                   <TripOverview
                     trip={currentResponse.trip}
@@ -524,7 +495,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
                   />
                 )}
               </div>
-              <div>
+              <div className="flex">
                 <CostBreakdown
                   cost={currentResponse.estimated_cost || (currentResponse as any).cost_breakdown}
                   budget={currentResponse.trip?.budget}
@@ -533,65 +504,105 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
             </div>
 
             {/* Flights & Hotels Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {((currentResponse.flights && currentResponse.flights.length > 0) || (currentResponse as any).flight_booking) && (
-                <FlightCard
-                  flights={
-                    currentResponse.flights && currentResponse.flights.length > 0
-                      ? currentResponse.flights
-                      : [(currentResponse as any).flight_booking].filter(Boolean)
-                  }
-                />
-              )}
-              {((currentResponse.hotels && currentResponse.hotels.length > 0) || (currentResponse as any).hotel_booking) && (
-                <HotelCard
-                  hotels={
-                    currentResponse.hotels && currentResponse.hotels.length > 0
-                      ? currentResponse.hotels
-                      : [
-                          (currentResponse as any).hotel_booking,
-                          ...((currentResponse as any).alternate_hotels || []),
-                        ].filter(Boolean)
-                      }
-                />
-              )}
-            </div>
+            {(() => {
+              const flightsList =
+                currentResponse.flights && currentResponse.flights.length > 0
+                  ? currentResponse.flights
+                  : [(currentResponse as any).flight_booking].filter(Boolean);
+              const hotelsList =
+                currentResponse.hotels && currentResponse.hotels.length > 0
+                  ? currentResponse.hotels
+                  : [
+                      (currentResponse as any).hotel_booking,
+                      ...((currentResponse as any).alternate_hotels || []),
+                    ].filter(Boolean);
 
-            {/* Interactive Route Map */}
-            {currentResponse.itinerary && currentResponse.itinerary.length > 0 && (
-              <TripMap
+              const hasFlights = flightsList.length > 0;
+              const hasHotels = hotelsList.length > 0;
+
+              if (!hasFlights && !hasHotels) return null;
+
+              if (hasFlights && hasHotels) {
+                return (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                    <FlightCard flights={flightsList} />
+                    <HotelCard hotels={hotelsList} />
+                  </div>
+                );
+              }
+
+              return (
+                <div className="w-full">
+                  {hasFlights && <FlightCard flights={flightsList} />}
+                  {hasHotels && <HotelCard hotels={hotelsList} />}
+                </div>
+              );
+            })()}
+
+            {/* RAAHI Digital Twin & What-If Weather Simulation Lab */}
+            {currentResponse.session_id && currentResponse.trip && (
+              <DigitalTwinPanel
+                tripId={currentResponse.session_id}
+                destination={currentResponse.trip.destination}
                 itinerary={currentResponse.itinerary}
-                hotels={
-                  currentResponse.hotels && currentResponse.hotels.length > 0
-                    ? currentResponse.hotels
-                    : (currentResponse as any).hotel_booking
-                    ? [(currentResponse as any).hotel_booking]
-                    : []
-                }
-                destination={currentResponse.trip?.destination}
+                liveWeather={currentResponse.weather}
+                digitalTwin={currentResponse.digital_twin}
+                onSimulationApplied={(res) => setSimulationResult(res)}
               />
             )}
 
+
+            {/* Interactive Route Map */}
+            {(() => {
+              const activeItinerary = simulationResult
+                ? simulationResult.simulated_itinerary
+                : currentResponse.itinerary;
+
+              return activeItinerary && activeItinerary.length > 0 ? (
+                <TripMap
+                  itinerary={activeItinerary}
+                  hotels={
+                    currentResponse.hotels && currentResponse.hotels.length > 0
+                      ? currentResponse.hotels
+                      : (currentResponse as any).hotel_booking
+                      ? [(currentResponse as any).hotel_booking]
+                      : []
+                  }
+                  destination={currentResponse.trip?.destination}
+                  isSimulated={Boolean(simulationResult)}
+                />
+              ) : null;
+            })()}
+
             {/* Multi-Day Timeline & AI Conversation Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                {currentResponse.itinerary && currentResponse.itinerary.length > 0 && (
-                  <ItineraryTimeline
-                    itinerary={currentResponse.itinerary}
-                  />
-                )}
-              </div>
-              <div>
-                <div className="sticky top-24 space-y-4">
-                  <ConversationView
-                    chatHistory={currentChatHistory}
-                    tripName={currentTripName}
-                    onSendMessage={handleSendMessage}
-                    isLoading={isLoading}
-                  />
+            {(() => {
+              const activeItinerary = simulationResult
+                ? simulationResult.simulated_itinerary
+                : currentResponse.itinerary;
+
+              return (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 space-y-6">
+                    {activeItinerary && activeItinerary.length > 0 && (
+                      <ItineraryTimeline
+                        itinerary={activeItinerary}
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <div className="sticky top-24 space-y-4">
+                      <ConversationView
+                        chatHistory={currentChatHistory}
+                        tripName={currentTripName}
+                        onSendMessage={handleSendMessage}
+                        isLoading={isLoading}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
+
           </div>
         </ErrorBoundary>
       )}

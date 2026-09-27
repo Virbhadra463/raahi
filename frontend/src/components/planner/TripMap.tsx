@@ -18,6 +18,7 @@ interface TripMapProps {
   itinerary: ItineraryDay[];
   hotels?: HotelItem[];
   destination?: string;
+  isSimulated?: boolean;
 }
 
 interface MapLocation {
@@ -34,6 +35,10 @@ interface MapLocation {
   isHotel?: boolean;
   color: string;
   stepNumber?: number;
+  weatherSuitability?: number;
+  weatherStatus?: "recommended" | "affected" | "replaced";
+  weatherCondition?: string;
+  exposure?: "indoor" | "outdoor" | "mixed";
 }
 
 const DAY_COLORS = [
@@ -50,6 +55,7 @@ export const TripMap: React.FC<TripMapProps> = ({
   itinerary,
   hotels,
   destination,
+  isSimulated = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -77,6 +83,10 @@ export const TripMap: React.FC<TripMapProps> = ({
         notes: primaryHotel.rationale || primaryHotel.location,
         isHotel: true,
         color: "#7A1026", // Deep maroon for hotel
+        weatherSuitability: 100,
+        weatherStatus: "recommended",
+        weatherCondition: "Sheltered stay",
+        exposure: "indoor"
       });
     }
   }
@@ -102,6 +112,10 @@ export const TripMap: React.FC<TripMapProps> = ({
           isMeal: act.is_meal || act.category.toLowerCase().includes("restaurant"),
           color,
           stepNumber: isReturn ? undefined : step++,
+          weatherSuitability: act.weather_suitability ?? 95,
+          weatherStatus: act.weather_status ?? "recommended",
+          weatherCondition: act.weather_condition,
+          exposure: act.exposure,
         });
       }
     });
@@ -126,7 +140,7 @@ export const TripMap: React.FC<TripMapProps> = ({
       const defaultCenter: [number, number] =
         locations.length > 0
           ? [locations[0].latitude, locations[0].longitude]
-          : [26.9124, 75.7873]; // Default Jaipur
+          : [18.5204, 73.8567]; // Maharashtra center default
 
       const map = L.map(mapContainerRef.current, {
         center: defaultCenter,
@@ -193,7 +207,7 @@ export const TripMap: React.FC<TripMapProps> = ({
             color,
             weight: 4,
             opacity: 0.85,
-            dashArray: "7, 9",
+            dashArray: isSimulated ? "4, 6" : "7, 9",
           }).addTo(polylinesLayer);
         }
       });
@@ -202,16 +216,30 @@ export const TripMap: React.FC<TripMapProps> = ({
       filteredLocations.forEach((loc) => {
         bounds.extend([loc.latitude, loc.longitude]);
 
+        // Weather status badge indicator ring
+        let borderStyle = "border: 2px solid white;";
+        let statusBadge = "";
+        if (loc.weatherStatus === "replaced") {
+          borderStyle = "border: 2.5px solid #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);";
+          statusBadge = `<span style="position: absolute; top: -6px; right: -6px; background: #10b981; color: #000; font-size: 8px; font-weight: 900; border-radius: 9999px; padding: 1px 3px;">✓</span>`;
+        } else if (loc.weatherStatus === "affected") {
+          borderStyle = "border: 2.5px solid #f43f5e; box-shadow: 0 0 10px rgba(244, 63, 94, 0.6);";
+          statusBadge = `<span style="position: absolute; top: -6px; right: -6px; background: #f43f5e; color: #fff; font-size: 8px; font-weight: 900; border-radius: 9999px; padding: 1px 3px;">!</span>`;
+        }
+
         const iconHtml = loc.isHotel
-          ? `<div style="background-color: ${loc.color}; border: 2.5px solid #FFD38A;" class="w-8 h-8 rounded-full shadow-lg flex items-center justify-center text-white text-xs font-bold">
+          ? `<div style="background-color: ${loc.color}; ${borderStyle} position: relative;" class="w-8 h-8 rounded-full shadow-lg flex items-center justify-center text-white text-xs font-bold">
               <span style="font-size: 13px;">🏨</span>
+              ${statusBadge}
              </div>`
           : loc.isMeal
-          ? `<div style="background-color: ${loc.color}; border: 2.5px solid #FFD38A;" class="w-7 h-7 rounded-full shadow-md flex items-center justify-center text-white text-xs font-bold">
+          ? `<div style="background-color: ${loc.color}; border: 2.5px solid #FFD38A; position: relative;" class="w-7 h-7 rounded-full shadow-md flex items-center justify-center text-white text-xs font-bold">
               <span style="font-size: 11px;">🍽️</span>
+              ${statusBadge}
              </div>`
-          : `<div style="background-color: ${loc.color}; border: 2px solid white;" class="w-7 h-7 rounded-full shadow-md flex items-center justify-center text-white text-xs font-black font-mono">
+          : `<div style="background-color: ${loc.color}; ${borderStyle} position: relative;" class="w-7 h-7 rounded-full shadow-md flex items-center justify-center text-white text-xs font-black font-mono">
               ${loc.stepNumber || "•"}
+              ${statusBadge}
              </div>`;
 
         const customIcon = L.divIcon({
@@ -231,17 +259,36 @@ export const TripMap: React.FC<TripMapProps> = ({
           `${loc.name} ${destination || ""}`
         )}`;
 
+        const suitabilityScore = loc.weatherSuitability ?? 95;
+        const suitabilityColor = suitabilityScore >= 70 ? "#059669" : suitabilityScore >= 50 ? "#d97706" : "#e11d48";
+
         const popupContent = `
-          <div style="font-family: 'Poppins', sans-serif; min-width: 200px; padding: 4px; color: #1C1440;">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+          <div style="font-family: 'Poppins', sans-serif; min-width: 220px; padding: 4px; color: #1C1440;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 4px;">
               <span style="background-color: ${loc.color}; color: #FDF3EA; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 9999px; text-transform: uppercase;">
                 ${loc.isHotel ? "ACCOMMODATION" : `DAY ${loc.dayNumber}${loc.stepNumber ? ` · STOP ${loc.stepNumber}` : ""}`}
               </span>
-              ${loc.time ? `<span style="font-size: 11px; color: #7A1026; font-weight: 700;">⏰ ${loc.time}</span>` : ""}
+              <span style="background-color: ${suitabilityColor}20; color: ${suitabilityColor}; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 6px; border: 1px solid ${suitabilityColor}40;">
+                Suitability: ${suitabilityScore}/100
+              </span>
             </div>
-            <h4 style="margin: 2px 0 0 0; font-size: 14px; font-weight: 800; color: #1C1440; font-family: 'Baloo 2', sans-serif;">${loc.name}</h4>
-            <div style="font-size: 11px; color: #7A1026; font-weight: 600;">${loc.category}</div>
-            ${loc.notes ? `<p style="margin: 6px 0 8px 0; font-size: 11px; color: #450915; line-height: 1.4;">${loc.notes}</p>` : ""}
+
+            <h4 style="margin: 3px 0 1px 0; font-size: 14px; font-weight: 800; color: #1C1440; font-family: 'Baloo 2', sans-serif;">${loc.name}</h4>
+            <div style="font-size: 11px; color: #7A1026; font-weight: 600;">${loc.category} ${loc.exposure ? `· ${loc.exposure.toUpperCase()}` : ""}</div>
+
+            ${loc.weatherCondition ? `
+              <div style="background: #F4EAE0; border-radius: 6px; padding: 4px 6px; margin: 5px 0; font-size: 10px; color: #450915; font-weight: 600;">
+                🌦️ ${loc.weatherCondition}
+              </div>
+            ` : ""}
+
+            ${loc.weatherStatus === "replaced" ? `
+              <div style="background: #D1FAE5; color: #065F46; border-radius: 6px; padding: 3px 6px; margin: 4px 0; font-size: 10px; font-weight: 700;">
+                ✓ Rain-safe alternative added in simulation
+              </div>
+            ` : ""}
+
+            ${loc.notes ? `<p style="margin: 5px 0 8px 0; font-size: 11px; color: #450915; line-height: 1.4;">${loc.notes}</p>` : ""}
             <div style="border-top: 1.5px solid #E8DAC9; margin-top: 6px; padding-top: 6px; display: flex; justify-content: flex-end;">
               <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #7A1026; font-size: 11px; font-weight: 800; text-decoration: none; display: flex; align-items: center; gap: 4px;">
                 Open in Google Maps ↗
@@ -259,6 +306,7 @@ export const TripMap: React.FC<TripMapProps> = ({
       });
 
       if (bounds.isValid()) {
+
         map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
       }
     });
@@ -291,9 +339,9 @@ export const TripMap: React.FC<TripMapProps> = ({
   if (locations.length === 0) return null;
 
   return (
-    <div className="bg-[#FFFDF9] border-2 sm:border-3 border-signboard-navy rounded-3xl shadow-bollywood overflow-hidden flex flex-col transition-all text-signboard-navy">
+    <div className="w-full bg-[#FFFDF9] border-2 sm:border-3 border-signboard-navy rounded-3xl shadow-bollywood-lg overflow-hidden flex flex-col transition-all text-signboard-navy">
       {/* Header & Controls */}
-      <div className="p-4 sm:p-5 border-b-2 border-signboard-navy/10 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-parchment/60">
+      <div className="p-5 sm:p-6 border-b-2 border-signboard-navy/15 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-parchment/60">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded-xl bg-carpet-maroon text-marigold shadow-xs">

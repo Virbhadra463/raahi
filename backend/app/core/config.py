@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 
     # Gemini API
     GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-3.8-flash"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # External APIs
     OVERPASS_URL: str = "https://overpass-api.de/api/interpreter"

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Compass, Sparkles } from 'lucide-react';
 
 interface LandingNavbarProps {
   onLoginClick: () => void;
   onRegisterClick: () => void;
-  onExploreClick: () => void;
+  onExploreClick?: () => void;
   onStartJourneyClick?: () => void;
   onOpenPlanner?: () => void;
   currentUser?: { name: string } | null;
@@ -14,9 +13,6 @@ interface LandingNavbarProps {
 export default function Navbar({
   onLoginClick,
   onRegisterClick,
-  onExploreClick,
-  onStartJourneyClick,
-  onOpenPlanner,
   currentUser,
   onLogout,
 }: LandingNavbarProps) {
@@ -85,30 +81,8 @@ export default function Navbar({
           </a>
         </nav>
 
-        {/* Action Group: AI Planner, Explore, subtle Login & primary Register */}
+        {/* Action Group: User Session, Login & primary Register */}
         <div className="flex items-center gap-2 sm:gap-3">
-          
-          {onOpenPlanner && (
-            <button
-              onClick={onOpenPlanner}
-              className="bg-[#7A1026] hover:bg-[#9C1A35] text-[#FFD38A] border border-[#FFD38A]/40 text-xs sm:text-sm font-heading font-extrabold px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-marigold animate-pulse" />
-              <span>AI Planner</span>
-            </button>
-          )}
-
-          {/* Explore Button */}
-          <button
-            onClick={onExploreClick}
-            className="text-xs sm:text-sm font-heading font-extrabold text-parchment/90 hover:text-marigold px-2.5 sm:px-3 py-1.5 transition-colors cursor-pointer flex items-center gap-1.5"
-          >
-            <span>Explore</span>
-            <Compass className="w-3.5 h-3.5 text-marigold stroke-[2.5]" />
-          </button>
-
-          <div className="w-px h-4 bg-parchment/20 hidden sm:block" />
-
           {currentUser?.name ? (
             <div className="flex items-center gap-2">
               <span className="text-xs sm:text-sm font-heading font-extrabold text-[#FFD38A] px-2.5 py-1 rounded-full bg-[#7A1026]/80 border border-[#FFD38A]/30">

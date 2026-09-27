@@ -28,9 +28,9 @@ export const FlightCard: React.FC<FlightCardProps> = (props: FlightCardProps = {
   };
 
   return (
-    <div className="bg-[#FFFDF9] rounded-3xl shadow-bollywood border-2 sm:border-3 border-signboard-navy p-6 space-y-5 text-signboard-navy relative overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-signboard-navy/10 pb-4">
-        <div className="flex items-center gap-2">
+    <div className="w-full bg-[#FFFDF9] rounded-3xl shadow-bollywood-lg border-2 sm:border-3 border-signboard-navy p-6 sm:p-8 space-y-6 text-signboard-navy relative overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-signboard-navy/15 pb-5">
+        <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-signboard-navy text-parchment flex items-center justify-center shadow-xs">
             <Plane className="w-4 h-4" />
           </div>

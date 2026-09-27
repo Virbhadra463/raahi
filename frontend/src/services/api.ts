@@ -1,5 +1,5 @@
-import { ChatResponse, ChatMessage, TripListItem } from "@/types/travel";
-import { generateLocalTrip } from "./localPlanner";
+import { ChatResponse, ChatMessage, TripListItem } from "../types/travel";
+
 
 const API_BASE_URL =
   (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_URL) ||
@@ -39,10 +39,10 @@ export async function planTrip(
   if (tripName) payload.trip_name = tripName;
   if (chatHistory && chatHistory.length > 0) payload.chat_history = chatHistory;
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes
 
+  try {
     const response = await fetch(`${API_BASE_URL}/api/chat`, {
       method: "POST",
       headers: {
@@ -53,16 +53,20 @@ export async function planTrip(
     });
     clearTimeout(timeoutId);
 
-    if (response.ok) {
-      const data = await response.json();
-      return data;
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.detail || `Backend server responded with status ${response.status}`);
     }
-  } catch (e) {
-    console.info("FastAPI backend offline or timed out, generating via local memory AI planner:", e);
-  }
 
-  // Fallback to rich client-side local memory generator
-  return generateLocalTrip(message, sessionId, tripName, chatHistory);
+    const data: ChatResponse = await response.json();
+    return data;
+  } catch (e: any) {
+    clearTimeout(timeoutId);
+    if (e.name === "AbortError") {
+      throw new Error("The backend planning request timed out after 2 minutes. Please check the backend server logs.");
+    }
+    throw new Error(e.message || "Failed to communicate with FastAPI backend server at http://127.0.0.1:8000.");
+  }
 }
 
 export async function fetchTrips(): Promise<TripListItem[]> {
@@ -191,3 +195,40 @@ export async function deleteTrip(sessionId: string): Promise<void> {
     });
   } catch {}
 }
+
+export async function fetchDigitalTwin(tripId: string): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/digital-twin/${tripId}`);
+  if (!res.ok) {
+    throw new Error(`Failed to load Digital Twin: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function simulateWeatherScenario(
+  tripId: string,
+  scenario: any,
+  itinerary?: any[],
+  destination?: string,
+  budget?: number
+): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/digital-twin/simulate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      trip_id: tripId,
+      scenario,
+      itinerary,
+      destination,
+      budget,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Simulation failed with status ${res.status}`);
+  }
+  return res.json();
+}
+
+

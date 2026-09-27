@@ -55,8 +55,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi import Request
 
+from app.api.digital_twin import router as digital_twin_router
+
 # Include API routes
 app.include_router(chat_router)
+app.include_router(digital_twin_router)
+
 
 
 @app.exception_handler(RequestValidationError)

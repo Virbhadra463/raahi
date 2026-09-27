@@ -81,6 +81,10 @@ export interface ActivityItem {
   notes?: string;
   is_meal?: boolean;
   accessibility: string;
+  weather_suitability?: number;
+  weather_status?: "recommended" | "affected" | "replaced";
+  weather_condition?: string;
+  exposure?: "indoor" | "outdoor" | "mixed";
 }
 
 export interface ItineraryDay {
@@ -138,6 +142,132 @@ export interface TripObservability {
   clustering_strategy: string;
 }
 
+export interface WeatherCurrent {
+  temperature_c: number;
+  apparent_temperature_c: number;
+  precipitation_mm: number;
+  precipitation_probability: number;
+  wind_speed_kmh: number;
+  weather_code: number;
+  condition: string;
+  is_day: number;
+}
+
+export interface WeatherHourlyItem {
+  time: string;
+  temperature_c: number;
+  precipitation_probability: number;
+  precipitation_mm: number;
+  weather_code: number;
+  condition: string;
+  wind_speed_kmh: number;
+}
+
+export interface WeatherDailyItem {
+  date: string;
+  weather_code: number;
+  condition: string;
+  temperature_max_c: number;
+  temperature_min_c: number;
+  precipitation_sum_mm: number;
+  precipitation_probability_max: number;
+  sunrise?: string;
+  sunset?: string;
+}
+
+export interface WeatherReport {
+  location: { lat: number; lon: number };
+  provider: string;
+  source_endpoint: string;
+  current: WeatherCurrent;
+  hourly: WeatherHourlyItem[];
+  daily: WeatherDailyItem[];
+}
+
+export interface DigitalTwinLocation {
+  name: string;
+  latitude: number;
+  longitude: number;
+  category: string;
+  exposure: "indoor" | "outdoor" | "mixed";
+  weather: {
+    temperature_c?: number;
+    precipitation_probability?: number;
+    precipitation_mm?: number;
+    condition?: string;
+  };
+  weather_suitability: number;
+  status: "recommended" | "affected" | "replaced";
+  day_number?: number;
+  time?: string;
+  activity_type?: string;
+}
+
+export interface TripDigitalTwin {
+  trip_id: string;
+  destination: string;
+  dates: string[];
+  budget: number;
+  weather_state: any;
+  locations: DigitalTwinLocation[];
+  itinerary: ItineraryDay[];
+  routes: Array<{
+    from_place: string;
+    to_place: string;
+    day_number: number;
+    travel_minutes: number;
+    distance_km: number;
+  }>;
+  constraints: Record<string, any>;
+  user_preferences: Record<string, any>;
+  quests: any[];
+  badges: any[];
+  simulation_state: { active: boolean };
+}
+
+export interface SimulationScenarioWeather {
+  precipitation_probability: number;
+  precipitation_mm: number;
+  temperature_c: number;
+  wind_speed_kmh: number;
+  weather_code: number;
+  weather_condition?: string;
+  duration_hours: number;
+  affected_location?: string;
+}
+
+export interface SimulationScenario {
+  weather: SimulationScenarioWeather;
+}
+
+export interface ActivityChangeRecord {
+  activity: string;
+  day_number: number;
+  time: string;
+  change: string;
+  replacement?: string;
+  reason: string;
+}
+
+export interface SimulationValidation {
+  budget_valid: boolean;
+  time_valid: boolean;
+  weather_valid: boolean;
+  notes: string[];
+}
+
+export interface DigitalTwinSimulateResponse {
+  trip_id: string;
+  scenario: any;
+  changes: ActivityChangeRecord[];
+  original_itinerary: ItineraryDay[];
+  simulated_itinerary: ItineraryDay[];
+  locations: DigitalTwinLocation[];
+  travel_time_impact_minutes: number;
+  cost_impact: number;
+  validation: SimulationValidation;
+}
+
 export interface ChatResponse {
   message: string;
   trip: TripSummary;
@@ -152,7 +282,10 @@ export interface ChatResponse {
   relaxation_notes?: string;
   observability?: TripObservability;
   removed_attractions?: RemovedAttractionRecord[];
+  weather?: WeatherReport;
+  digital_twin?: TripDigitalTwin;
 }
+
 
 
 

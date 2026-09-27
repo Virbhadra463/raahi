@@ -53,9 +53,9 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#FFFDF9] rounded-3xl shadow-bollywood border-2 sm:border-3 border-signboard-navy p-5 sm:p-6 space-y-4 text-signboard-navy relative overflow-hidden">
+    <div className="w-full bg-[#FFFDF9] rounded-3xl shadow-bollywood-lg border-2 sm:border-3 border-signboard-navy p-5 sm:p-6 space-y-4 text-signboard-navy relative overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b-2 border-signboard-navy/10 pb-3">
+      <div className="flex items-center justify-between border-b-2 border-signboard-navy/15 pb-4">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-xl bg-carpet-maroon text-marigold flex items-center justify-center shadow-xs">
             <MessageSquare className="w-4 h-4" />
@@ -126,9 +126,19 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
         )}
 
         {isLoading && (
-          <div className="flex items-center gap-2 text-xs font-heading font-bold text-carpet-maroon p-2">
-            <Loader2 className="w-4 h-4 animate-spin text-marigold" />
-            <span>AI Scribe is recalculating your itinerary...</span>
+          <div className="p-3.5 rounded-2xl bg-parchment/90 border-2 border-marigold/60 text-signboard-navy text-xs space-y-1.5 shadow-xs animate-fadeIn">
+            <div className="flex items-center justify-between font-heading font-black">
+              <span className="flex items-center gap-1.5 text-carpet-maroon">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-carpet-maroon" />
+                <span>Multi-Agent AI Pipeline Active</span>
+              </span>
+              <span className="text-[10px] text-signboard-navy/60 font-bold uppercase tracking-wider">
+                Live Server
+              </span>
+            </div>
+            <p className="text-[11px] text-signboard-navy/80 font-medium leading-relaxed">
+              Searching OSM Overpass landmarks, calculating OSRM road legs, and balancing budget...
+            </p>
           </div>
         )}
 

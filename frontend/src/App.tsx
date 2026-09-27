@@ -231,16 +231,11 @@ export default function App() {
         <LandingNavbar
           onLoginClick={() => setAuthModal('login')}
           onRegisterClick={() => setAuthModal('register')}
-          onExploreClick={handleStartApp}
-          onStartJourneyClick={() => setJourneyModalOpen(true)}
-          onOpenPlanner={() => handleOpenPlanner()}
           currentUser={currentUserSession}
           onLogout={handleLogout}
         />
         <Hero
-          onExploreClick={handleStartApp}
-          onStartJourneyClick={() => setJourneyModalOpen(true)}
-          onOpenPlanner={() => handleOpenPlanner()}
+          onExploreClick={() => handleOpenPlanner()}
         />
         <WhatIsRaahi />
         <RaahiBook />
@@ -590,45 +585,6 @@ export default function App() {
         )}
 
       </main>
-
-      {/* Folk Art Divider Strip */}
-      <div className="relative mt-16 overflow-hidden" style={{ height: '90px', background: 'linear-gradient(90deg, #7A1026 0%, #1C1440 50%, #7A1026 100%)' }}>
-        <div className="relative z-10 h-full flex items-center justify-center gap-6 px-6">
-          <span className="text-marigold font-heading font-black text-base sm:text-xl tracking-widest uppercase drop-shadow-lg">
-            🎨 Preserving India's Living Folk Art Traditions
-          </span>
-          <span className="hidden sm:block text-parchment/80 text-sm font-bold">• Warli • Madhubani • Pattachitra • Gond •</span>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="warli-footer text-parchment border-t-4 border-marigold py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left relative z-10">
-          <div className="space-y-1">
-            <div className="flex items-center justify-center md:justify-start gap-2">
-              <span className="signboard-text text-2xl tracking-wide uppercase">RAAHI</span>
-              <span className="text-[10px] bg-carpet text-marigold px-2 py-0.5 rounded-full font-bold border border-marigold">
-                SIH 2026 #26204
-              </span>
-            </div>
-            <p className="text-xs text-parchment/60 max-w-md">
-              Boosting Cultural Tourism &amp; Smart Crowd Balancing across 28 States &amp; 8 UTs • Team Commit Issues
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-marigold">
-            <button onClick={() => setActiveTab('india-map')} className="hover:text-signboard-pink transition-colors">India Map</button>
-            <span>•</span>
-            <button onClick={() => setShowSIHModal(true)} className="hover:text-signboard-pink transition-colors">SIH Architecture</button>
-            <span>•</span>
-            <button onClick={() => setActiveTab('quests')} className="hover:text-signboard-pink transition-colors">Quest Engine</button>
-            <span>•</span>
-            <button onClick={() => setActiveTab('crowd')} className="hover:text-signboard-pink transition-colors">Demand-Balancing</button>
-            <span>•</span>
-            <button onClick={() => setActiveTab('artisans')} className="hover:text-signboard-pink transition-colors">Artisan Hub</button>
-          </div>
-          <div className="text-xs text-marigold/60 font-medium">© 2026 Raahi India. Crafted with the Bollywood Signboard Palette.</div>
-        </div>
-      </footer>
 
       {activeQuest && (
         <ActiveQuestModal

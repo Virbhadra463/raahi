@@ -22,9 +22,9 @@ export const HotelCard: React.FC<HotelCardProps> = (props: HotelCardProps = {}) 
   const otherHotels = hotelsList.slice(1, 4);
 
   return (
-    <div className="bg-[#FFFDF9] rounded-3xl shadow-bollywood border-2 sm:border-3 border-signboard-navy p-6 space-y-5 text-signboard-navy relative overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-signboard-navy/10 pb-4">
-        <div className="flex items-center gap-2">
+    <div className="w-full bg-[#FFFDF9] rounded-3xl shadow-bollywood-lg border-2 sm:border-3 border-signboard-navy p-6 sm:p-8 space-y-6 text-signboard-navy relative overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-signboard-navy/15 pb-5">
+        <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-carpet-maroon text-marigold flex items-center justify-center shadow-xs">
             <Hotel className="w-4 h-4" />
           </div>
@@ -44,7 +44,7 @@ export const HotelCard: React.FC<HotelCardProps> = (props: HotelCardProps = {}) 
       </div>
 
       {/* Top Ranked Hotel Card */}
-      <div className="p-5 rounded-2xl bg-parchment/70 border-2 border-signboard-navy/15 space-y-4 shadow-xs">
+      <div className="p-5 sm:p-6 rounded-2xl bg-parchment/70 border-2 border-signboard-navy/15 space-y-4 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -176,7 +176,7 @@ export const HotelCard: React.FC<HotelCardProps> = (props: HotelCardProps = {}) 
           <div className="text-xs font-heading font-black text-signboard-navy/70 uppercase tracking-wider">
             Alternative Stay Choices:
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {otherHotels.map((hotel, idx) => (
               <div
                 key={idx}

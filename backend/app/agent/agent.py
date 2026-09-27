@@ -37,8 +37,13 @@ from app.services.recommendation import (
     score_attraction_candidates, filter_and_protect_candidates
 )
 from app.services.itinerary import build_multiday_itinerary, haversine_km, replan_itinerary
+from app.tools.weather import get_weather
+from app.services.weather_optimizer import evaluate_and_replan_weather
+from app.services.digital_twin import build_digital_twin_from_trip_data
+from app.models.schemas import WeatherReport
 
 logger = logging.getLogger(__name__)
+
 
 
 
@@ -330,7 +335,12 @@ def extract_requirements_heuristically(
 
     # Travel constraint & pace
     pace = "relaxed" if ("parents" in msg_lower or "travel too much" in msg_lower or "peaceful" in msg_lower) else "moderate"
-    accessibility = "Senior friendly / minimal travel" if "parents" in msg_lower else None
+    # Weather preference detection (Nugen aligned)
+    weather_pref = {"avoid_outdoor_rain": True}
+    if any(k in msg_lower for k in ("outdoor if it rains", "don't want outdoor", "avoid outdoor", "no outdoor in rain", "indoor if it rains", "avoid rain")):
+        weather_pref["avoid_outdoor_rain"] = True
+    elif any(k in msg_lower for k in ("love rain", "enjoy rain", "monsoon trek")):
+        weather_pref["avoid_outdoor_rain"] = False
 
     return ExtractedTripRequirements(
         destination=dest,
@@ -361,8 +371,10 @@ def extract_requirements_heuristically(
         other_constraints=["Minimal transit time" if "don't want to travel too much" in msg_lower else ""],
         local_experience=local_experience,
         travel_style=travel_style,
-        transport_preferences=transport_prefs
+        transport_preferences=transport_prefs,
+        weather_preference=weather_pref
     )
+
 
 
 def get_gemini_endpoint_and_headers() -> Tuple[str, Dict[str, str]]:
@@ -1056,8 +1068,32 @@ async def plan_trip_pipeline(chat_request: ChatRequest) -> ChatResponse:
         return_removals=True
     )
 
+    # 8.5 Live Open-Meteo Weather Integration & Weather-Aware Replanning
+    live_weather_dict = await get_weather(center_lat, center_lon)
+    live_weather_report = WeatherReport(**live_weather_dict) if live_weather_dict else None
+
+    if live_weather_dict:
+        itinerary_days, weather_changes = await evaluate_and_replan_weather(
+            itinerary_days=itinerary_days,
+            weather_state=live_weather_dict,
+            destination=destination,
+            available_places=combined_places,
+            weather_preference=reqs.weather_preference
+        )
+        if weather_changes:
+            logger.info(f"Weather-aware optimization made {len(weather_changes)} replanning changes due to live conditions.")
+            for wc in weather_changes:
+                removed_records.append(
+                    RemovedAttractionRecord(
+                        name=wc.activity,
+                        reason=f"Weather resilience: {wc.reason}",
+                        suggestion=f"Replaced with indoor alternative: {wc.replacement}"
+                    )
+                )
+
     # 9. Automated Validation & Explainable Self-Healing
     is_valid, violations = validate_itinerary(itinerary_days, reqs, cost_breakdown, selected_hotel)
+
     if not is_valid:
         logger.warning(f"Itinerary validation detected violations: {violations}. Running explainable self-healing.")
         relaxed_reqs = reqs.model_copy(update={"pace": "relaxed"})
@@ -1160,8 +1196,21 @@ async def plan_trip_pipeline(chat_request: ChatRequest) -> ChatResponse:
         sources=sources,
         relaxation_notes=relaxation_note,
         observability=observability_meta,
-        removed_attractions=removed_records
+        removed_attractions=removed_records,
+        weather=live_weather_report
     )
+
+    # Initialize and attach virtual TripDigitalTwin
+    final_response.digital_twin = build_digital_twin_from_trip_data(
+        trip_id=session_id,
+        trip_summary=final_response.trip,
+        itinerary_days=final_response.itinerary,
+        weather_state=live_weather_dict,
+        budget=cost_breakdown.budget,
+        user_preferences=reqs.weather_preference
+    )
+
     saved_session["last_response"] = final_response
     return final_response
+
 

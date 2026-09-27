@@ -2,14 +2,14 @@
 
 import React from "react";
 import { TripSummary } from "../../types/travel";
-import { MapPin, Calendar, Wallet, Users, Heart, ShieldCheck, Utensils, FileDown, Sparkles } from "lucide-react";
+import { MapPin, Calendar, Wallet, Users, Heart, ShieldCheck, Utensils, Sparkles, FileDown } from "lucide-react";
 
 interface TripOverviewProps {
   trip: TripSummary;
   tripName?: string;
   message?: string;
   relaxations?: string[];
-  onDownloadWord?: () => void;
+  onDownloadWord?: () => Promise<void> | void;
 }
 
 export const TripOverview: React.FC<TripOverviewProps> = ({
@@ -32,8 +32,8 @@ export const TripOverview: React.FC<TripOverviewProps> = ({
   };
 
   return (
-    <div className="bg-[#FFFDF9] rounded-3xl shadow-bollywood-lg border-2 sm:border-3 border-signboard-navy p-6 sm:p-8 space-y-6 text-signboard-navy relative overflow-hidden">
-      {/* Perforated ticket stamp aesthetic bar */}
+    <div className="bg-[#FFFDF9] rounded-3xl shadow-bollywood-lg border-2 sm:border-3 border-signboard-navy p-6 sm:p-8 space-y-6 text-signboard-navy relative overflow-hidden w-full h-full flex flex-col justify-between">
+      {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-signboard-navy/15 pb-5">
         <div>
           <div className="flex items-center gap-2">
@@ -54,13 +54,14 @@ export const TripOverview: React.FC<TripOverviewProps> = ({
 
         {onDownloadWord && (
           <button
+            type="button"
             onClick={handleDownload}
             disabled={isDownloading}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-carpet-maroon hover:bg-carpet-light active:scale-95 text-white font-heading font-black text-xs uppercase tracking-wider shadow-bollywood border-2 border-carpet-maroon transition-all cursor-pointer self-start sm:self-auto shrink-0 disabled:opacity-50"
-            title="Download full verified itinerary as Microsoft Word (.docx)"
+            title="Download full verified itinerary as Microsoft Word document (.docx)"
           >
             <FileDown className="w-4 h-4 text-marigold" />
-            <span>{isDownloading ? "Generating Word..." : "Export Docx"}</span>
+            <span>{isDownloading ? "Generating Word..." : "Download Itinerary (.docx)"}</span>
           </button>
         )}
       </div>

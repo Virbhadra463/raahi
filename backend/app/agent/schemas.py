@@ -126,3 +126,8 @@ class ExtractedTripRequirements(BaseModel):
         default_factory=list,
         description="Any other constraints mentioned"
     )
+    weather_preference: Dict[str, Any] = Field(
+        default_factory=lambda: {"avoid_outdoor_rain": True},
+        description="Nugen-aligned weather preferences e.g. avoid_outdoor_rain: True"
+    )
+

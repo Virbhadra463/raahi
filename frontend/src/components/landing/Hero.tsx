@@ -1,15 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Compass, Sparkles, ArrowRight } from 'lucide-react';
+import { Compass, Sparkles } from 'lucide-react';
 import { POLAROIDS } from '../../data/landing/quests';
 
 interface HeroProps {
   onExploreClick: () => void;
-  onStartJourneyClick: () => void;
+  onStartJourneyClick?: () => void;
   onOpenPlanner?: () => void;
 }
 
-export default function Hero({ onExploreClick, onStartJourneyClick, onOpenPlanner }: HeroProps) {
+export default function Hero({ onExploreClick }: HeroProps) {
   return (
     <section className="relative min-h-[92vh] bg-rug-pattern flex flex-col justify-center pt-28 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden text-parchment border-b-4 border-signboard-navy">
       {/* Dark gradient overlay for crystal readability */}
@@ -35,32 +35,14 @@ export default function Hero({ onExploreClick, onStartJourneyClick, onOpenPlanne
             A travel companion that turns every street into a quest — and every quest into real money for the people who live there.
           </p>
 
-          {/* CTAs: Explore, AI Trip Planner, Start My Journey */}
+          {/* CTA: Explore Button only (directs to AI Trip Planner) */}
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <button
               onClick={onExploreClick}
-              className="bg-marigold hover:bg-amber-300 active:scale-95 text-signboard-navy font-heading font-black text-base px-7 py-3 rounded-full shadow-signboard-lg hover:shadow-signboard transition-all duration-150 flex items-center justify-center gap-2 group cursor-pointer"
+              className="bg-marigold hover:bg-amber-300 active:scale-95 text-signboard-navy font-heading font-black text-base sm:text-lg px-8 py-3.5 rounded-full shadow-signboard-lg hover:shadow-signboard transition-all duration-150 flex items-center justify-center gap-2.5 group cursor-pointer"
             >
               <span>Explore</span>
               <Compass className="w-5 h-5 group-hover:rotate-45 transition-transform stroke-[2.5]" />
-            </button>
-
-            {onOpenPlanner && (
-              <button
-                onClick={onOpenPlanner}
-                className="bg-[#7A1026] hover:bg-[#9C1A35] active:scale-95 text-[#FFD38A] border-2 border-[#FFD38A]/50 font-heading font-black text-base px-7 py-3 rounded-full shadow-signboard-lg hover:shadow-signboard transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Sparkles className="w-5 h-5 text-marigold animate-pulse" />
-                <span>AI Trip Planner</span>
-              </button>
-            )}
-
-            <button
-              onClick={onStartJourneyClick}
-              className="border-2 border-parchment hover:border-marigold bg-signboard-dark/50 hover:bg-signboard-navy text-parchment hover:text-marigold font-heading font-extrabold text-base px-6 py-2.5 rounded-full backdrop-blur-md transition-all duration-150 flex items-center justify-center gap-2 active:scale-95 cursor-pointer shadow-md"
-            >
-              <span>Build Journey</span>
-              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </motion.div>

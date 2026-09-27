@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
-import { Compass, Flame, Coins, Trophy, Volume2, VolumeX, Store, Activity, Map, Award, X, Menu, Sparkles, ArrowLeft } from 'lucide-react';
-import { playClickSound, setSoundMuted } from '../utils/audio';
+import { Compass, Trophy, Store, Activity, Map, X, Menu, Sparkles } from 'lucide-react';
+import { playClickSound } from '../utils/audio';
 
 export type AppTab = 'planner' | 'india-map' | 'state-detail' | 'quests' | '3d-district' | 'crowd' | 'artisans' | 'passport';
 
 interface NavbarProps {
-  user: UserProfile;
+  user?: UserProfile;
   activeTab: AppTab;
   setActiveTab: (tab: AppTab) => void;
-  isMuted: boolean;
-  setIsMuted: (muted: boolean) => void;
-  onOpenSIHModal: () => void;
+  isMuted?: boolean;
+  setIsMuted?: (muted: boolean) => void;
+  onOpenSIHModal?: () => void;
   selectedStateName?: string;
   onBackToLanding?: () => void;
 }
@@ -26,22 +26,14 @@ const NAV_ITEMS: readonly { id: AppTab; label: string; icon: React.FC<any>; dot?
 ] as const;
 
 export const Navbar: React.FC<NavbarProps> = ({
-  user, activeTab, setActiveTab, isMuted, setIsMuted, onOpenSIHModal, selectedStateName, onBackToLanding
+  activeTab, setActiveTab, selectedStateName, onBackToLanding
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const xpPercent = Math.min(100, Math.round((user.currentXp / user.xpToNextLevel) * 100));
 
   const handleTabClick = (tab: typeof activeTab) => {
     playClickSound();
     setActiveTab(tab);
     setMobileOpen(false);
-  };
-
-  const toggleSound = () => {
-    const next = !isMuted;
-    setIsMuted(next);
-    setSoundMuted(next);
-    if (!next) playClickSound();
   };
 
   const isQuestActive = activeTab === 'state-detail' || activeTab === 'quests';
@@ -106,66 +98,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* ─── RIGHT STATS + CONTROLS ─── */}
+          {/* ─── RIGHT CONTROLS (Mobile menu toggle) ─── */}
           <div className="flex items-center gap-2">
-
-            {/* Coins + Streak chip */}
-            <div className="flex items-center gap-2 bg-signboard-navy/60 backdrop-blur-sm border border-marigold/30 rounded-xl px-3 py-1.5">
-              <span className="flex items-center gap-1 text-xs font-bold text-marigold">
-                <Coins className="w-3.5 h-3.5 text-marigold" />
-                {user.coins}
-              </span>
-              <span className="w-px h-3.5 bg-marigold/30" />
-              <span className="flex items-center gap-0.5 text-xs font-bold text-signboard-pink">
-                <Flame className="w-3.5 h-3.5 fill-signboard-pink text-signboard-pink" />
-                {user.streakDays}d
-              </span>
-            </div>
-
-            {/* Avatar + XP — desktop only */}
-            <button
-              onClick={() => handleTabClick('passport')}
-              className="hidden md:flex items-center gap-2 bg-signboard-navy/60 backdrop-blur-sm border border-marigold/20 rounded-xl pl-1.5 pr-3 py-1 hover:border-marigold transition-colors group"
-            >
-              <div className="relative">
-                <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-lg object-cover border-2 border-marigold" />
-                <span className="absolute -bottom-1 -right-1 bg-carpet text-marigold text-[8px] font-black px-1 rounded-full border border-marigold leading-none py-0.5">
-                  L{user.level}
-                </span>
-              </div>
-              <div className="text-left">
-                <div className="text-[11px] font-semibold text-parchment leading-none">{user.name.split(' ')[0]}</div>
-                <div className="flex items-center gap-1 mt-1">
-                  <div className="w-16 h-1.5 bg-signboard-navyDeep rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-marigold-deep to-marigold rounded-full transition-all duration-500" style={{ width: `${xpPercent}%` }} />
-                  </div>
-                  <span className="text-[9px] text-parchment/50 font-semibold">{xpPercent}%</span>
-                </div>
-              </div>
-            </button>
-
-            {/* Sound toggle */}
-            <button
-              onClick={toggleSound}
-              className="p-2 rounded-xl bg-signboard-navy/60 border border-marigold/20 text-parchment/70 hover:bg-signboard-navyDeep hover:text-marigold transition-all"
-              title={isMuted ? 'Unmute' : 'Mute'}
-            >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-marigold" />}
-            </button>
-
-            {/* SIH badge */}
-            <button
-              onClick={() => { playClickSound(); onOpenSIHModal(); }}
-              className="hidden sm:flex items-center gap-1 px-3 py-2 bg-carpet hover:bg-carpet-light text-marigold font-black text-[11px] rounded-xl transition-all uppercase tracking-wider shadow-bollywood border-2 border-marigold/50"
-            >
-              <Award className="w-3.5 h-3.5" />
-              SIH
-            </button>
-
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="lg:hidden p-2 rounded-xl bg-signboard-navy/60 border border-marigold/20 text-parchment"
+              aria-label="Toggle navigation menu"
             >
               {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>

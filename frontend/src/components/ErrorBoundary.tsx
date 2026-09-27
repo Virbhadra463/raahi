@@ -14,6 +14,8 @@ export class ErrorBoundary extends React.Component<
     this.state = { hasError: false, error: null };
   }
 
+
+
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }

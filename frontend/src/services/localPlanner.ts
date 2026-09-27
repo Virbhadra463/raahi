@@ -140,13 +140,27 @@ function extractDuration(prompt: string): number {
 }
 
 function extractBudget(prompt: string): number {
-  const match = prompt.match(/(?:₹|rs\.?|inr|budget\s*(?:of|is|under|around)?\s*)\s*(\d{3,7})/i);
-  if (match) return Math.max(2000, parseInt(match[1], 10));
+  // 1. Support 'k' notation: "6k", "6.5k", "under 6k", "budget 6k", "in 6k", "6k inr", "6k budget"
+  const kMatch = prompt.match(/(?:₹|rs\.?|inr|budget\s*(?:of|is|under|around|within)?\s*|^|\b)\s*(\d+(?:\.\d+)?)\s*k\b/i);
+  if (kMatch) {
+    const val = Math.round(parseFloat(kMatch[1]) * 1000);
+    if (val >= 500 && val <= 1000000) return val;
+  }
+
+  // 2. Support explicit numbers with currency/budget keywords: "₹6,000", "6000 rs", "budget 6000", "under 6000"
+  const match = prompt.match(/(?:₹|rs\.?|inr|budget\s*(?:of|is|under|around|within)?\s*)\s*([\d,]+)/i);
+  if (match) {
+    const parsed = parseInt(match[1].replace(/,/g, ""), 10);
+    if (!isNaN(parsed) && parsed >= 500) return parsed;
+  }
+
+  // 3. Fallback to standalone numbers between 1,000 and 500,000
   const numMatches = prompt.match(/\b(\d{4,6})\b/g);
   if (numMatches && numMatches.length > 0) {
     const val = parseInt(numMatches[0], 10);
-    if (val >= 2000 && val <= 500000) return val;
+    if (val >= 1000 && val <= 500000) return val;
   }
+
   return 15000;
 }
 
@@ -165,13 +179,19 @@ export function generateLocalTrip(
   const resolvedSessionId = sessionId || `session_${Date.now()}`;
   const resolvedTripName = tripName || `${destination} Cultural Journey`;
 
-  // Calculate realistic cost breakdown
-  const accomDaily = preset.hotels[0].pricePerNight;
-  const accommodationCost = Math.round(accomDaily * Math.max(1, duration - 1));
-  const foodCost = Math.round(650 * duration);
-  const transportCost = Math.round(450 * duration + 500);
-  const activitiesCost = Math.round(350 * duration);
-  const miscCost = Math.round(200 * duration);
+  // Calculate realistic cost breakdown strictly respecting totalBudget
+  const nights = Math.max(1, duration - 1);
+  const maxAccomTotal = Math.round(totalBudget * 0.48);
+  const accomDaily = Math.min(
+    preset.hotels[0].pricePerNight,
+    Math.max(450, Math.round(maxAccomTotal / nights))
+  );
+  const accommodationCost = Math.round(accomDaily * nights);
+
+  const foodCost = Math.round(Math.min(totalBudget * 0.24, 650 * duration));
+  const transportCost = Math.round(Math.min(totalBudget * 0.16, 450 * duration));
+  const activitiesCost = Math.round(Math.min(totalBudget * 0.08, 300 * duration));
+  const miscCost = Math.max(0, Math.round(totalBudget * 0.04));
   const totalCost = accommodationCost + foodCost + transportCost + activitiesCost + miscCost;
   const remainingBudget = Math.max(0, totalBudget - totalCost);
 
@@ -270,26 +290,29 @@ export function generateLocalTrip(
   }
 
   // Hotels
-  const hotels: HotelItem[] = preset.hotels.map((h, idx) => ({
-    name: h.name,
-    location: `${h.location}, ${destination}`,
-    latitude: preset.lat + (idx * 0.008 - 0.004),
-    longitude: preset.lng + (idx * 0.007 - 0.003),
-    price_per_night: h.pricePerNight,
-    total_price: h.pricePerNight * Math.max(1, duration - 1),
-    currency: "INR",
-    rating: h.rating,
-    reviews_count: 240 + idx * 80,
-    hotel_class: h.hotelClass,
-    free_cancellation: true,
-    distance_km: 1.2 + idx * 0.8,
-    distance_reference: "Historic City Center",
-    room_type: "Deluxe Heritage Courtyard Room",
-    amenities: ["Free High-speed Wi-Fi", "Daily Authentic Breakfast", "Air Conditioning", "Artisan Concierge"],
-    booking_url: "https://www.makemytrip.com/hotels/",
-    score: 0.94 - idx * 0.05,
-    rationale: `Selected for exceptional heritage charm, walkability to major monuments, and alignment with ₹${totalBudget} budget constraint.`,
-  }));
+  const hotels: HotelItem[] = preset.hotels.map((h, idx) => {
+    const scaledRate = idx === 0 ? accomDaily : Math.max(450, Math.round(accomDaily * (1 + idx * 0.2)));
+    return {
+      name: h.name,
+      location: `${h.location}, ${destination}`,
+      latitude: preset.lat + (idx * 0.008 - 0.004),
+      longitude: preset.lng + (idx * 0.007 - 0.003),
+      price_per_night: scaledRate,
+      total_price: scaledRate * nights,
+      currency: "INR",
+      rating: h.rating,
+      reviews_count: 240 + idx * 80,
+      hotel_class: h.hotelClass,
+      free_cancellation: true,
+      distance_km: 1.2 + idx * 0.8,
+      distance_reference: "Historic City Center",
+      room_type: "Deluxe Heritage Courtyard Room",
+      amenities: ["Free High-speed Wi-Fi", "Daily Authentic Breakfast", "Air Conditioning", "Artisan Concierge"],
+      booking_url: "https://www.makemytrip.com/hotels/",
+      score: 0.94 - idx * 0.05,
+      rationale: `Selected for exceptional heritage charm, walkability to major monuments, and alignment with ₹${totalBudget.toLocaleString()} budget constraint.`,
+    };
+  });
 
   // Flights
   const flights: FlightItem[] = [

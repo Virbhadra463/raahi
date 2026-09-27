@@ -55,8 +55,8 @@ export const TripBar: React.FC<TripBarProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#FFFDF9] rounded-2xl shadow-sm border-2 border-signboard-navy/15 p-4 transition-all space-y-3 text-signboard-navy">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-signboard-navy/10 pb-3">
+    <div className="w-full bg-[#FFFDF9] rounded-3xl shadow-bollywood-lg border-2 sm:border-3 border-signboard-navy p-5 sm:p-6 transition-all space-y-4 text-signboard-navy">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-signboard-navy/15 pb-4">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-carpet-maroon text-marigold flex items-center justify-center font-bold shadow-xs">
             <Compass className="w-4 h-4" />

@@ -204,6 +204,10 @@ class ActivityItem(BaseModel):
     notes: Optional[str] = None
     is_meal: bool = False
     accessibility: str = "Accessibility information unavailable"
+    weather_suitability: Optional[int] = Field(default=None, description="Deterministic weather suitability (0-100)")
+    weather_status: Optional[str] = Field(default="recommended", description="recommended | affected | replaced")
+    weather_condition: Optional[str] = Field(default=None, description="Live or scenario condition summary")
+    exposure: Optional[str] = Field(default=None, description="indoor | outdoor | mixed")
 
 
 class ItineraryDay(BaseModel):
@@ -242,6 +246,152 @@ class TripSummary(BaseModel):
     transportation_preferences: Optional[str] = None
     pace: str = "moderate"
     accessibility_requirements: Optional[str] = None
+    weather_preference: Optional[Dict[str, Any]] = Field(default=None, description="Structured Nugen-aligned weather preferences")
+
+
+# ==========================================
+# WEATHER SCHEMAS (Open-Meteo Normalized)
+# ==========================================
+
+class WeatherLocation(BaseModel):
+    lat: float
+    lon: float
+
+
+class WeatherCurrent(BaseModel):
+    temperature_c: float
+    apparent_temperature_c: float
+    precipitation_mm: float
+    precipitation_probability: int
+    wind_speed_kmh: float
+    weather_code: int
+    condition: str
+    is_day: int = 1
+
+
+class WeatherHourlyItem(BaseModel):
+    time: str
+    temperature_c: float
+    precipitation_probability: int
+    precipitation_mm: float
+    weather_code: int
+    condition: str
+    wind_speed_kmh: float
+
+
+class WeatherDailyItem(BaseModel):
+    date: str
+    weather_code: int
+    condition: str
+    temperature_max_c: float
+    temperature_min_c: float
+    precipitation_sum_mm: float
+    precipitation_probability_max: int
+    sunrise: Optional[str] = None
+    sunset: Optional[str] = None
+
+
+class WeatherReport(BaseModel):
+    """Normalized structured Open-Meteo weather report."""
+    location: WeatherLocation
+    provider: str = "Open-Meteo"
+    source_endpoint: str = "forecast"
+    current: WeatherCurrent
+    hourly: List[WeatherHourlyItem] = Field(default_factory=list)
+    daily: List[WeatherDailyItem] = Field(default_factory=list)
+
+
+# ==========================================
+# DIGITAL TWIN SCHEMAS
+# ==========================================
+
+class DigitalTwinLocation(BaseModel):
+    """A geographic location within the Digital Twin environment."""
+    name: str
+    latitude: float
+    longitude: float
+    category: str
+    exposure: str = "outdoor"  # indoor | outdoor | mixed
+    weather: Dict[str, Any] = Field(default_factory=dict)
+    weather_suitability: int = 100
+    status: str = "recommended"  # recommended | affected | replaced
+    day_number: Optional[int] = None
+    time: Optional[str] = None
+    activity_type: Optional[str] = None
+
+
+class TripDigitalTwin(BaseModel):
+    """Structured virtual representation of the trip and its environment."""
+    trip_id: str
+    destination: str
+    dates: List[str] = Field(default_factory=list)
+    budget: float
+    weather_state: Dict[str, Any] = Field(default_factory=dict)
+    locations: List[DigitalTwinLocation] = Field(default_factory=list)
+    itinerary: List[ItineraryDay] = Field(default_factory=list)
+    routes: List[Dict[str, Any]] = Field(default_factory=list)
+    constraints: Dict[str, Any] = Field(default_factory=dict)
+    user_preferences: Dict[str, Any] = Field(default_factory=dict)
+    quests: List[Dict[str, Any]] = Field(default_factory=list)
+    badges: List[Dict[str, Any]] = Field(default_factory=list)
+    simulation_state: Dict[str, Any] = Field(default_factory=lambda: {"active": False})
+
+
+class SimulationScenarioWeather(BaseModel):
+    """Weather parameters for hypothetical what-if simulation."""
+    precipitation_probability: float = Field(default=85.0, ge=0.0, le=100.0)
+    precipitation_mm: float = Field(default=15.0, ge=0.0)
+    temperature_c: float = Field(default=24.0)
+    wind_speed_kmh: float = Field(default=15.0, ge=0.0)
+    weather_code: int = Field(default=65)
+    weather_condition: Optional[str] = Field(default="Heavy Rain")
+    duration_hours: int = Field(default=4, ge=1, le=24)
+    affected_location: Optional[str] = Field(default=None)
+
+
+class SimulationScenario(BaseModel):
+    weather: SimulationScenarioWeather
+
+
+class DigitalTwinSimulateRequest(BaseModel):
+    """Request payload for POST /api/digital-twin/simulate."""
+    trip_id: str
+    scenario: SimulationScenario
+    itinerary: Optional[List[ItineraryDay]] = None
+    destination: Optional[str] = None
+    budget: Optional[float] = None
+
+
+
+class ActivityChangeRecord(BaseModel):
+    """Explicit diff record of an activity modified or swapped during simulation."""
+    activity: str
+    day_number: int
+    time: str
+    change: str  # "replaced" | "rescheduled"
+    replacement: Optional[str] = None
+    reason: str
+
+
+class SimulationValidation(BaseModel):
+    """Constraint validation results for simulated trip."""
+    budget_valid: bool = True
+    time_valid: bool = True
+    weather_valid: bool = True
+    notes: List[str] = Field(default_factory=list)
+
+
+class DigitalTwinSimulateResponse(BaseModel):
+    """Response payload for Digital Twin simulation."""
+    trip_id: str
+    scenario: Dict[str, Any]
+    changes: List[ActivityChangeRecord] = Field(default_factory=list)
+    original_itinerary: List[ItineraryDay]
+    simulated_itinerary: List[ItineraryDay]
+    locations: List[DigitalTwinLocation] = Field(default_factory=list)
+    travel_time_impact_minutes: int = 0
+    cost_impact: float = 0.0
+    validation: SimulationValidation
 
 
 class ChatResponse(BaseModel):
@@ -266,6 +416,8 @@ class ChatResponse(BaseModel):
     relaxation_notes: Optional[str] = None
     observability: Optional[TripObservability] = None
     removed_attractions: List[RemovedAttractionRecord] = Field(default_factory=list)
+    weather: Optional[WeatherReport] = Field(default=None, description="Live Open-Meteo weather report")
+    digital_twin: Optional[TripDigitalTwin] = Field(default=None, description="RAAHI Digital Twin model")
 
 
 class CreateTripRequest(BaseModel):
@@ -286,3 +438,4 @@ class TripListItem(BaseModel):
     duration_days: Optional[int] = None
     budget: Optional[float] = None
     message_count: int = 0
+
